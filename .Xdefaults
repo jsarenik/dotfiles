@@ -1,0 +1,83 @@
+URxvt.reverseVideo: True
+URxvt.font: -xos4-terminus-medium-r-normal-*-16-160-*-*-*-*-iso10646-1
+URxvt.scrollBar: False
+URxvt.internalBorder: 5
+URxvt.urgentOnBell: True
+URxvt.geometry: 80x35
+URxvt.termName: rxvt
+URxvt.borderLess: False
+!URxvt.jumpScroll: True
+URxvt.perl-ext-common:  default,url-select
+URxvt.keysym.M-u:       perl:url-select:select_next
+URxvt.urlLauncher:      firefox
+URxvt.underlineURLs:    false
+
+XTerm*scrollBar: False
+XTerm*reverseVideo: True
+XTerm*jumpScroll: False
+XTerm*vt100Graphics: True
+XTerm*decTerminalID: 220
+XTerm*internalBorder: 8
+!XTerm*charClass: 33:48,36-38:48,43-47:48,58:48,61:48,63-64:48,126:48
+XTerm*charClass: 33:48,37:48,45-47:48,38:48
+XTerm*font: -xos4-terminus-medium-r-normal-*-22-*-*-*-*-*-iso10646-1
+!XTerm*faceName: Terminus:antialias=false
+XTerm*bellIsUrgent: True
+XTerm*visualBellIsUrgent: True
+XTerm*visualBellDelay: 0
+
+UXTerm*scrollBar: False
+UXTerm*reverseVideo: True
+UXTerm*jumpScroll: False
+UXTerm*vt100Graphics: True
+UXTerm*decTerminalID: 220
+UXTerm*internalBorder: 8
+UXTerm*font: -xos4-terminus-medium-r-normal-*-20-*-*-*-*-*-iso10646-1
+!UXTerm*faceName: Terminus:antialias=false
+UXTerm*bellIsUrgent: True
+UXTerm*visualBellIsUrgent: True
+UXTerm*visualBellDelay: 0
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! from http://www.freedesktop.org/wiki/Standards_2fXSettingsRegistry
+!      http://www.freedesktop.org/wiki/Specifications/XSettingsRegistry
+!
+!    Xft settings
+!   ==============
+!
+! These settings can be shared by all Xft clients.
+
+! Xft/Antialias
+! Whether to antialias Xft fonts; 0no, 1yes, -1=default
+!  * int -1
+Xft.antialias:  1
+
+! Xft/Hinting
+! Whether to hint Xft fonts; 0no, 1yes, -1=default
+!  * int -1
+Xft.hinting: 1
+
+! Xft/HintStyle
+! What degree of hinting to use; "hintnone",
+! "hintslight", "hintmedium", or "hintfull"
+!  * string "hintnone"
+Xft.hintstyle: hintfull
+
+! Xft/RGBA
+! Type of subpixel antialiasing; "none",
+! "rgb", "bgr", "vrgb", "vbgr"
+!  * string "none"
+Xft.rgba: rgb
+
+! Xft/DPI
+! Resolution for Xft, in 1024 *	dots/inch. -1 to use default value
+!  * int -1
+Xft.dpi:       96.000000
+!Xft.dpi: 96
+!Xft.dpi:       106.000000
+!Xft.dpi:       150.000000
+
+!Gtk.FontName: Sans\ 8
+
+Xft.autohint: 0
+Xft.lcdfilter: lcddefault
