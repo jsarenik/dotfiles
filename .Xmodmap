@@ -1,0 +1,41 @@
+!  $ xmodmap -grammar
+! xmodmap accepts the following input expressions:
+!
+!    pointer = default              reset pointer buttons to default
+!    pointer = NUMBER ...           set pointer button codes
+!    keycode NUMBER = [KEYSYM ...]  map keycode to given keysyms
+!    keysym KEYSYM = [KEYSYM ...]   look up keysym and do a keycode operation
+!    clear MODIFIER                 remove all keys for this modifier
+!    add MODIFIER = KEYSYM ...      add the keysyms to the modifier
+!    remove MODIFIER = KEYSYM ...   remove the keysyms from the modifier
+!
+! where NUMBER is a decimal, octal, or hex constant; KEYSYM is a valid
+! Key Symbol name; and MODIFIER is one of the eight modifier names:  Shift,
+! Lock, Control, Mod1, Mod2, Mod3, Mod4, or Mod5.  Lines beginning with
+! an exclamation mark (!) are taken as comments.  Case is significant except
+! for MODIFIER names.
+!
+! Keysyms on the left hand side of the = sign are looked up before any changes
+! are made; keysyms on the right are looked up after all of those on the left
+! have been resolved.  This makes it possible to swap modifier keys.
+
+!in /etc/X11/xorg.conf.d/20-keyboard.conf
+! or by running setxkbmap -option "ctrl:nocaps"
+remove Lock = Caps_Lock
+keysym Caps_Lock = Control_L
+add Control = Control_L
+
+! MacBook keys - Alt instead of Command, Right Command = Compose
+clear Mod4
+clear Mod1
+keycode 133 = Super_R
+!keycode 134 = Super_L
+keysym Super_R = Multi_key
+add Mod1 = Alt_L Super_L
+
+! Normal right Alt Compose
+keysym Alt_R = Multi_key
+
+! Natural two-finger scrolling
+pointer = 1 2 3 5 4 7 6 8 9 10 11 12 13
+!pointer = 1 2 3 5 4 7 6 8 9 10 11 12
