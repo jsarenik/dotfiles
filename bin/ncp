@@ -1,0 +1,26 @@
+#!/bin/bash
+
+test x"$1" = x"-p" && { NC_PORT=$2; shift 2; }
+FILE_FULL=$1
+REMOTE_HOST=${2%:}
+
+a="/$FILE_FULL"; a=${a%/*}; a=${a#/}; a=${a:-.}; FDIR=$(cd $a; pwd)
+
+FILE_NAME=/${FILE_FULL%/}
+FILE_NAME=${FILE_NAME##*/}
+
+NC_PORT=${NC_PORT:-$((RANDOM%65565+1024))}
+NC_PORT_EXT=${NC_PORT_EXT:-$NC_PORT}
+echo Sending data to $REMOTE_HOST:$NC_PORT
+
+ssh -n $REMOTE_HOST "nc -l -p $NC_PORT </dev/null \
+    | tar x || mv -v $FILE_NAME $FILE_NAME.partial" &
+trap "wait $!; exit" EXIT INT QUIT
+
+while
+  ! tar -c -C $FDIR $FILE_NAME \
+      | pv -Wtbr -D1 \
+      | nc ${REMOTE_HOST#*@} $NC_PORT_EXT
+do
+  sleep 1
+done
