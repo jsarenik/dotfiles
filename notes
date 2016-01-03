@@ -1,0 +1,7 @@
+372XXXXXXXX(at)sms.onesimcard.com
+
+apt-get -u --reinstall --fix-missing install $(dpkg -S LC_MESSAGES | cut -d: -f1 | tr ', ' '' | sort -u)
+
+ssh root@valibuk "rm -rf /var/lib/apt/lists /usr/share/doc; apt-get clean all; tar cv --exclude=/tmp --exclude=/home --numeric-owner --one-file-system / | pigz" > valibuk-root.tar.gz
+
+git rev-parse --short HEAD
