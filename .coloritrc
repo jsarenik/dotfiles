@@ -1,0 +1,32 @@
+mark "[0-9]+ definitions found" [31m [0m
+mark "^From.*$" [33m [0m
+
+# World FactBook
+mark "^  Economy$" [1;33m [0m
+mark "^  [a-zA-Z]+:[a-zA-Z ]+$" [1;33m [0m
+
+# Words (wn, web)
+mark "^ ( [^[:blank:]]+)+$" [1;32m [0m
+mark "^ ( [^[:blank:]])+ \\[^[:blank:]]+\\" [1;32m [0m
+mark "\\[^[:blank:]]+\\" [0m [0m
+mark "  [0-9]+ Moby .*$" [1;37m [0m
+
+# WordNet
+mark "^       n" [1;33m [0m
+mark "^       v" [1;31m [0m
+mark "^       adj" [1;34m [0m
+mark "^       adv" [1;35m [0m
+mark " +[0-9]+: " [1;37m [0m
+mark "syn:" [32m [0m
+mark "ant:" [31m [0m
+
+# Webster
+mark "^     [0-9]+\." [1;37m [0m
+mark "{[a-zA-Z0-9.', -]+$" [36m [0m
+mark "{[a-zA-Z0-9.', -]+}" [36m [0m
+mark "^[[:blank:]]*[a-zA-Z0-9.', -]+}" [36m [0m
+
+# Easton
+mark "\([0-9]+\.\)" [1;37m [0m
+
+mark "^No definitions found for .*$" [1;38m [0m
