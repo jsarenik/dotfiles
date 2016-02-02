@@ -17,3 +17,8 @@
 	ui = auto
 [credential]
 	helper = cache
+[sendemail]
+	smtpEncryption = tls
+	smtpServer = smtp.gmail.com
+	smtpUser = jajomojo@gmail.com
+	smtpServerPort = 587
