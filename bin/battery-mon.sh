@@ -1,8 +1,9 @@
 #!/bin/sh
 
 while 
-  PERC=$(acpi | grep -Eo '[0-9]+%')
+  ACPI=$(acpi)
 do
-  xsetroot -name "$PERC"
+  echo $ACPI | awk '{print "\"" $3 " " $4 "\""}' | tr -d , | \
+    xargs xsetroot -name
   sleep 5
 done
