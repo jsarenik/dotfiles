@@ -5,16 +5,17 @@
 
 AFILE=$HOME/.myagent.sh
 
-type ssh-agent >/dev/null && {
-while
-  test -S "$SSH_AUTH_SOCK" || {
-    touch "$AFILE" || exit 1
-    . "$AFILE"
-  }
-  ! test -S "$SSH_AUTH_SOCK"
+test -S "$SSH_AUTH_SOCK" && {
+  set | grep SSH_AUTH_SOCK; echo "export SSH_AUTH_SOCK";
+  echo "echo Using pre-initialized SSH Agent"
+} > "$AFILE"
+
+touch "$AFILE" || exit 1
+until
+  . "$AFILE"
+  test -S "$SSH_AUTH_SOCK"
 do
-  ssh-agent -s > "$AFILE"
+  ssh-agent -s > "$AFILE" || exit 1
 done
-}
 
 unset AFILE
