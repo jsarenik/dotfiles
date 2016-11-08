@@ -1,0 +1,15 @@
+set ssl_starttls=yes
+set ssl_force_tls=yes
+set imap_user="jan"
+set imap_pass='PASSWORD'
+set folder = imaps://hostname/
+set spoolfile = 'imaps://hostname/INBOX
+set from="Ján Sáreník <jan@domain>"
+set smtp_url="smtp://jan:PASSWORD@hostname:PORT"
+set certificate_file="~/.mutt_certificates"
+
+set sort="threads"
+set strict_threads="yes"
+set sort_browser="reverse-date"
+set sort_aux="last-date-received"
+unset collapse_unread
