@@ -1,46 +1,32 @@
-#!/bin/sh -x
+#!/bin/ksh
 
-cd $HOME
-set -x
+#
+# ~/.xinitrc
+#
+# Executed by startx (run your window manager from here)
+#
 
-# . $HOME/.bash_profile - xinit is run from login shell, so do not source again
+xrandr --auto
+
+#export QTDIR="/usr/lib/qt5"
+#export PATH="usr/bin:$QTDIR/bin:$PATH"
+#export QT_PLUGIN_PATH="/usr/lib/plugins:/usr/lib/qt5/plugins"
+#export QT_INCLUDE_PATH="/usr/include/qt5"
+#export QML2_IMPORT_PATH="/usr/lib/qml:/usr/lib/qt5/qml"
+#export QML_IMPORT_PATH="$QML2_IMPORT_PATH"
+#export KDE_SESSION_VERSION=5
+#export KDE_FULL_SESSION=true
+
+xbacklight -set 15
+xbanish &
+
+xset -dpms
+xset s off
+
+(while xsetroot -name "`acpi`"; do sleep 15; done)&
 . $HOME/bin/urxvtd.sh
-
-# Enable this for non-reparenting window managers
-export _JAVA_AWT_WM_NONREPARENTING=1
-
-# IBUS
-#export GTK_IM_MODULE=ibus
-#export XMODIFIERS=@im=ibus
-#export QT_IM_MODULE=ibus
-#ibus-daemon --xim -d
-
-xrdb -load $HOME/.Xdefaults
-
-. $HOME/bin/keyboard.sh
-xset +fp /usr/share/fonts/local
-xset fp rehash
-#xhost +
-xset -b
-#syndaemon -i 2 -R -d
-#xbacklight -set 50
-
-xautolock -locker xlock.sh -time 5 &
-/usr/local/bin/xwrits +top +breakclock +mouse +lock &
-
-xsetroot -solid black
-xsetroot -cursor_name left_ptr
-#clipit --daemon --no-icon &
-
-battery-mon.sh &
-
-# https://bbs.archlinux.org/viewtopic.php?id=189499
-#sudo sh -c "echo 50 > /sys/devices/system/cpu/intel_pstate/max_perf_pct"
-
-#/usr/local/bin/dwmstatus &
+$HOME/bin/keyboard.sh
+#exec dbus-launch --exit-with-session startkde
 #exec dbus-launch --exit-with-session dwm
 exec dwm
-#exec /usr/local/bin/dwm
-#exec /usr/bin/goomwwm -modkey Mod1
-#exec /usr/local/bin/cwm
-#exec /usr/bin/awesome
+#exec xfce4-session
