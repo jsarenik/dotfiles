@@ -1,9 +1,11 @@
 URxvt.reverseVideo: True
-URxvt.font: -xos4-terminus-medium-r-normal-*-16-160-*-*-*-*-iso10646-1
+!URxvt.font: -xos4-terminus-medium-r-normal-*-16-160-*-*-*-*-iso10646-1
+URxvt.font: -xos4-terminus-medium-r-normal-*-32-160-*-*-*-*-iso10646-1
 URxvt.scrollBar: False
-URxvt.internalBorder: 5
+URxvt.internalBorder: 0
 URxvt.urgentOnBell: True
-URxvt.geometry: 80x35
+!URxvt.geometry: 80x35
+URxvt.geometry: 80x25
 URxvt.termName: rxvt
 URxvt.borderLess: False
 !URxvt.jumpScroll: True
