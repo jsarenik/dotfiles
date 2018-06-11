@@ -61,9 +61,7 @@ umounty() {
 {
 for i in $MFS; do mounty $i; done
 test -n "$banner" && echo $basename: Filesystems mounting done
-
 echo $basename: Changing to $CHROOT
-echo HINT: sshd postgres sesame condor cumin qpidd openais
 } 1>&2
 
 addfile () {
