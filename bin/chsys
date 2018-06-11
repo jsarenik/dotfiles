@@ -37,9 +37,14 @@ mounty() {
   target="$CHROOT$1"
   test -d $target && {
     grep -q "$target" /proc/mounts || \
-      { printf "\t" \
+      {
+        test -z "$banner" &&
+          echo $basename: Mounting filesystems... &&
+          banner=1
+        printf "\t" \
           && echo "Mounting $1 to $target..." \
-          && mount -n -o rbind $1 $target; }
+          && mount -n -o rbind $1 $target;
+      }
   }
 }
 
@@ -54,9 +59,8 @@ umounty() {
 }
 
 {
-echo $basename: Mounting filesystems... &&
-  for i in $MFS; do mounty $i; done
-  echo $basename: Filesystems mounting done
+for i in $MFS; do mounty $i; done
+test -n "$banner" && echo $basename: Filesystems mounting done
 
 echo $basename: Changing to $CHROOT
 echo HINT: sshd postgres sesame condor cumin qpidd openais
