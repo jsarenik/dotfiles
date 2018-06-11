@@ -1,0 +1,158 @@
+#!/bin/sh
+test `id -u` -eq 0 || { echo "You have to be root!"; exit 1; }
+a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd $a; pwd)
+PATH=/usr/sbin:$PATH:$BINDIR
+
+basename=${0##*/}
+
+test -d "$1" || {
+  echo Directory $1 does not exist.
+  exit 1
+}
+
+CHROOT=${1:-'/var/tmp/rhel5-x86_64'}
+shift
+CHROOT=`cd $CHROOT; pwd`
+
+FKILL="fuser -v -k -i -SIGTERM $CHROOT"
+test -x /bin/busybox && {
+  FKILL="fuser -k -SIGTERM $CHROOT"
+}
+
+MFS="/dev /tmp /sys /proc /dev/pts /dev/shm /selinux"
+
+SHELL=/bin/sh
+test "$1" = "-k" && { kill=true; shift; }
+test "$1" = "-s" && { SHELL=$2; shift 2; }
+test "$*" != "" && { CMDS="-c '$*'"; }
+
+MTAB=$CHROOT/etc/mtab
+rm $MTAB
+writemtab() {
+  # This is needed mainly for Arch Linux's pacman
+  cat > $MTAB <<-EOF
+	#/dev/root / ext4 rw,relatime,barrier=1,data=ordered 0 0
+	/dev/mymac/lvol0 / btrfs rw,relatime,barrier=1,data=ordered 0 0
+	EOF
+}
+writemtab
+unset MTAB
+
+mounty() {
+  test -d $1 || return 1
+  target="$CHROOT$1"
+  test -d $target && {
+    grep -q "$target" /proc/mounts || \
+      { printf "\t" \
+          && echo "Mounting $1 to $target..." \
+          && mount -n -o rbind $1 $target; }
+  }
+}
+
+umounty() {
+  mount | grep -w "$1" | while read a b c d
+    do echo $c
+  done | grep -v "^$1$" | sort -r | while read a
+  do
+    echo -n "$basename: Umounting $a... "
+    umount -l $a && echo ok || echo FAILED
+  done
+}
+
+{
+echo $basename: Mounting filesystems... &&
+  for i in $MFS; do mounty $i; done
+  echo $basename: Filesystems mounting done
+
+echo $basename: Changing to $CHROOT
+echo HINT: sshd postgres sesame condor cumin qpidd openais
+} 1>&2
+
+addfile () {
+  if
+    test "$1" = "-o"
+  then
+    cp $2 $CHROOT/$2
+  else
+    test -r $CHROOT/$1 || cp $1 $CHROOT/$1
+  fi
+}
+
+# Files that are system-dependent
+# /etc/resolv.conf
+# /etc/hosts, /etc/fstab, /etc/passwd,
+# /etc/group, /etc/shadow, /etc/ld.so.conf, /etc/scsi_id.config
+
+test -d $CHROOT/etc/sysconfig && touch $CHROOT/etc/sysconfig/network
+addfile -o /etc/hosts
+addfile -o /etc/resolv.conf
+addfile /etc/krb5.conf
+
+addline () {
+  test "$1" = "-f" && { force=1; shift; }
+  file="$1"
+  pat="$2"
+  shift
+  shift
+  test -w "$file" || return 1
+  if [ -n "$force" ]
+    then sed -i "\^$pat^d" "$file"
+    else grep -q "$pat" "$file" && return 1
+  fi
+  echo "$@" >> $file
+}
+export PS1="chsys:${CHROOT##*/}\\\\$ "
+
+addline -f $CHROOT/root/.bashrc /tutti/call \
+  'test -r /tmp/tutti/call && . `/tmp/tutti/call`'
+addline -f $CHROOT/root/.bashrc "PS1" export PS1=\"$PS1\"
+
+echo "$CHROOT" | grep -q "i386" && SETARCH="setarch i386"
+
+$SETARCH chroot "$CHROOT" /usr/bin/env -i \
+  SHELL=$SHELL HOME=/root TERM="$TERM" PS1="$PS1" \
+  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  DISPLAY=$DISPLAY \
+  $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec $SHELL ${CMDS:-"-il"}; }"
+
+test "$kill" = "true" && $FKILL
+
+orphans() {
+  type busybox 1>&2 || return 0
+  PROCS=$(busybox fuser $1)
+  RET=$?
+  test -n "$PROCS" && {
+    echo Following processes are still running under $CHROOT:
+    for i in $PROCS
+    do
+      echo $i $(cat /proc/$i/cmdline | tr '\0' ' ')
+    done
+  }
+  return $RET
+}
+
+orphansa () {
+  RET=1
+  PIDS=`stat -c%N /proc/[0-9]*/root 2>/dev/null | tr -d " " | grep $CHROOT`
+  test -n "$PIDS" && for proc in $PIDS
+  do
+    proc=${proc%%/root*}
+    PROCS="$PROCS ${proc#*proc/}"
+    RET=0
+  done
+  test -n "$PROCS" && {
+    echo Following processes are still running under $CHROOT:
+    ps $PROCS
+  }
+  return $RET
+}
+
+{
+echo
+if ! orphans $CHROOT; then
+  umounty $CHROOT && echo $basename: Filesystems successfully umounted
+else
+  echo
+  echo "$basename: Filesystems not umounted (check PIDs above)"
+fi
+} 1>&2
