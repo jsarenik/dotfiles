@@ -112,7 +112,7 @@ $SETARCH chroot "$CHROOT" /usr/bin/env -i \
 test "$kill" = "true" && $FKILL
 
 orphans() {
-  type busybox 1>&2 || return 0
+  type busybox || return 0
   PROCS=$(busybox fuser $1)
   RET=$?
   test -n "$PROCS" && {
@@ -121,22 +121,6 @@ orphans() {
     do
       echo $i $(cat /proc/$i/cmdline | tr '\0' ' ')
     done
-  }
-  return $RET
-}
-
-orphansa () {
-  RET=1
-  PIDS=`stat -c%N /proc/[0-9]*/root 2>/dev/null | tr -d " " | grep $CHROOT`
-  test -n "$PIDS" && for proc in $PIDS
-  do
-    proc=${proc%%/root*}
-    PROCS="$PROCS ${proc#*proc/}"
-    RET=0
-  done
-  test -n "$PROCS" && {
-    echo Following processes are still running under $CHROOT:
-    ps $PROCS
   }
   return $RET
 }
