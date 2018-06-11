@@ -28,14 +28,8 @@ test "$*" != "" && { CMDS="-c '$*'"; }
 
 MTAB=$CHROOT/etc/mtab
 rm $MTAB
-writemtab() {
-  # This is needed mainly for Arch Linux's pacman
-  cat > $MTAB <<-EOF
-	#/dev/root / ext4 rw,relatime,barrier=1,data=ordered 0 0
-	/dev/mymac/lvol0 / btrfs rw,relatime,barrier=1,data=ordered 0 0
-	EOF
-}
-writemtab
+# This is needed mainly for Arch Linux's pacman
+grep -w / /proc/mounts > $MTAB
 unset MTAB
 
 mounty() {
