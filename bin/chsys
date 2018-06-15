@@ -65,13 +65,9 @@ echo $basename: Changing to $CHROOT
 } 1>&2
 
 addfile () {
-  if
-    test "$1" = "-o"
-  then
-    cp $2 $CHROOT/$2
-  else
-    test -r $CHROOT/$1 || cp $1 $CHROOT/$1
-  fi
+  test "$1" = "-o" && { OVER=1; cp $2 $CHROOT/$2; return 0; }
+  test -r $1 || return 1
+  test -r $CHROOT/$1 || cp $1 $CHROOT/$1
 }
 
 # Files that are system-dependent
