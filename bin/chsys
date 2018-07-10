@@ -12,6 +12,7 @@ test -d "$1" || {
 
 CHROOT=${1:-'/var/tmp/rhel5-x86_64'}
 shift
+chmod a+rx $CHROOT
 CHROOT=`cd $CHROOT; pwd`
 
 FKILL="fuser -v -k -i -SIGTERM $CHROOT"
