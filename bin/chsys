@@ -35,7 +35,7 @@ unset MTAB
 
 mountprint(){
   printf "\t" \
-    && echo "Mounting $1 to $2..." \
+    && echo "Mounting $1 to $2..."
 }
 
 mounty() {
