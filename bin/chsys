@@ -20,7 +20,7 @@ test -x /bin/busybox && {
   FKILL="fuser -k -SIGTERM $CHROOT"
 }
 
-MFS="/dev /tmp /sys /proc /dev/pts /dev/shm /selinux"
+MFS="/dev /tmp /sys /proc /selinux"
 
 SHELL=/bin/sh
 test "$1" = "-k" && { kill=true; shift; }
@@ -33,6 +33,11 @@ rm $MTAB
 grep -w / /proc/mounts > $MTAB
 unset MTAB
 
+mountprint(){
+  printf "\t" \
+    && echo "Mounting $1 to $2..." \
+}
+
 mounty() {
   test -d $1 || return 1
   target="$CHROOT$1"
@@ -42,9 +47,8 @@ mounty() {
         test -z "$banner" &&
           echo $basename: Mounting filesystems... &&
           banner=1
-        printf "\t" \
-          && echo "Mounting $1 to $target..." \
-          && mount -n -o rbind $1 $target;
+        mountprint $1 $target \
+          && mount -n --bind $1 $target;
       }
   }
 }
@@ -55,12 +59,16 @@ umounty() {
   done | grep -v "^$1$" | sort -r | while read a
   do
     echo -n "$basename: Umounting $a... "
-    umount -l $a && echo ok || echo FAILED
+    umount $a && echo ok || echo FAILED
   done
 }
 
 {
 for i in $MFS; do mounty $i; done
+mountprint devpts $CHROOT/dev/pts \
+	&& mount -t devpts devpts -o newinstance $CHROOT/dev/pts
+mountprint tmpfs $CHROOT/dev/shm \
+	&& mount -t tmpfs shm $CHROOT/dev/shm
 test -n "$banner" && echo $basename: Filesystems mounting done
 echo $basename: Changing to $CHROOT
 } 1>&2
