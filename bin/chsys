@@ -39,18 +39,18 @@ mountprint(){
 }
 
 mounty() {
-  test -d $1 || return 1
-  target="$CHROOT$1"
-  test -d $target && {
-    grep -q "$target" /proc/mounts || \
-      {
-        test -z "$banner" &&
-          echo $basename: Mounting filesystems... &&
-          banner=1
-        mountprint $1 $target \
-          && mount -n --bind $1 $target;
-      }
-  }
+  WHAT=$1
+  DEST=$2
+  test -d $DEST || return 1
+  shift 2
+  grep -q "$DEST" /proc/mounts || \
+    {
+      test -z "$banner" &&
+        echo $basename: Mounting filesystems... &&
+        banner=1
+      mountprint $WHAT $DEST \
+        && mount $* $WHAT $DEST;
+    }
 }
 
 umounty() {
@@ -64,13 +64,10 @@ umounty() {
 }
 
 {
-for i in $MFS; do mounty $i; done
-mountprint devpts $CHROOT/dev/pts \
-	&& mount -t devpts devpts -o newinstance $CHROOT/dev/pts
-mountprint tmpfs $CHROOT/dev/shm \
-	&& mount -t tmpfs shm $CHROOT/dev/shm
-mountprint tmpfs $CHROOT/tmp \
-	&& mount -t tmpfs tmpfs $CHROOT/tmp
+for i in $MFS; do mounty $i $CHROOT$i -n --bind; done
+mounty devpts $CHROOT/dev/pts -n -t devpts -o newinstance
+mounty shm $CHROOT/dev/shm -t tmpfs
+mounty tmpfs $CHROOT/tmp -t tmpfs
 test -n "$banner" && echo $basename: Filesystems mounting done
 echo $basename: Changing to $CHROOT
 } 1>&2
