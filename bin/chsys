@@ -113,7 +113,8 @@ $SETARCH chroot "$CHROOT" /usr/bin/env -i \
   SHELL=$SHELL HOME=/root TERM="$TERM" PS1="$PS1" \
   PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
   DISPLAY=$DISPLAY \
-  $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec $SHELL ${CMDS:-"-il"}; }"
+  $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec $SHELL ${CMDS:-"-il"}; }" \
+  || true
 
 test "$kill" = "true" && $FKILL
 
