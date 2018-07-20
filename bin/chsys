@@ -1,4 +1,12 @@
 #!/bin/sh
+
+VERSION=0.9.5-$(md5sum $0 | cut -b-5)
+
+test "$1" = "-V" && {
+  echo $VERSION
+  exit
+}
+
 test `id -u` -eq 0 || { echo "You have to be root!"; exit 1; }
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd $a; pwd)
 PATH=/usr/sbin:$PATH:$BINDIR
