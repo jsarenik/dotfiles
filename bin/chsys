@@ -28,8 +28,6 @@ test -x /bin/busybox && {
   FKILL="fuser -k -SIGTERM $CHROOT"
 }
 
-MFS="/dev /sys /proc /selinux"
-
 SHELL=/bin/sh
 test "$1" = "-k" && { kill=true; shift; }
 test "$1" = "-s" && { SHELL=$2; shift 2; }
@@ -72,7 +70,8 @@ umounty() {
 }
 
 {
-for i in $MFS; do mounty $i $CHROOT$i -n --bind; done
+mounty sysfs $CHROOT/sys -n -t sysfs
+mounty proc $CHROOT/proc -n -t proc
 mounty devpts $CHROOT/dev/pts -n -t devpts -o newinstance
 mounty shm $CHROOT/dev/shm -t tmpfs
 mounty tmpfs $CHROOT/tmp -t tmpfs
