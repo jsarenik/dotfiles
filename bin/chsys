@@ -106,8 +106,6 @@ addline () {
 }
 export PS1="chsys:${CHROOT##*/}\\\\$ "
 
-addline -f $CHROOT/root/.bashrc /tutti/call \
-  'test -r /tmp/tutti/call && . `/tmp/tutti/call`'
 addline -f $CHROOT/root/.bashrc "PS1" export PS1=\"$PS1\"
 
 echo "$CHROOT" | grep -q "i386" && SETARCH="setarch i386"
