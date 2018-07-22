@@ -97,7 +97,7 @@ addline () {
   pat="$2"
   shift
   shift
-  test -w "$file" || return 1
+  while ! test -w "$file"; do touch "$file"; done
   if [ -n "$force" ]
     then sed -i "\^$pat^d" "$file"
     else grep -q "$pat" "$file" && return 1
