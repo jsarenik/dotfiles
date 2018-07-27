@@ -81,6 +81,21 @@ addfile () {
   test -r $CHROOT/$1 || cp $1 $CHROOT/$1
 }
 
+basicdev() {
+  mknod /dev/tty c 5 0
+  mknod /dev/console c 5 1
+  mknod /dev/ptmx c 5 2
+  mknod /dev/null c 1 3
+  mknod /dev/zero c 1 5
+  mknod /dev/full c 1 7
+  mknod /dev/random c 1 8
+  mknod /dev/urandom c 1 9
+  ln -nsf /dev/fd /proc/self/fd
+  ln -nsf /dev/stderr /proc/self/fd/2
+  ln -nsf /dev/stdin /proc/self/fd/0
+  ln -nsf /dev/stdout /proc/self/fd/1
+}
+
 # Files that are system-dependent
 # /etc/resolv.conf
 # /etc/hosts, /etc/fstab, /etc/passwd,
