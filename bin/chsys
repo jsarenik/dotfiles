@@ -145,6 +145,10 @@ orphans() {
     do
       echo $i $(cat /proc/$i/cmdline | tr '\0' ' ')
     done
+    printf "Do you want to kill them? (y/N) "
+    read ans
+    echo $ans | grep -iq ^y && \
+      { echo "Killing $PROCS..."; kill $PROCS && RET=1;}
   }
   return $RET
 }
