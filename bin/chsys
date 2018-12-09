@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=0.9.7-$(md5sum $0 | cut -b-5)
+VERSION=0.9.8-$(md5sum $0 | cut -b-5)
 
 test "$1" = "-V" && {
   echo $VERSION
@@ -120,9 +120,7 @@ addline () {
   fi
   echo "$@" >> $file
 }
-export PS1="chsys:${CHROOT##*/}\\\\$ "
-
-addline -f $CHROOT/root/.bashrc "PS1" export PS1=\"$PS1\"
+PS1='chsys:${CHROOT##*/}\$ '
 
 echo "$CHROOT" | grep -q "i386" && SETARCH="setarch i386"
 
