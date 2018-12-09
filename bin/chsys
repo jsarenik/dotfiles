@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=0.9.8-$(md5sum $0 | cut -b-5)
+VERSION=0.9.9-$(md5sum $0 | cut -b-5)
 
 test "$1" = "-V" && {
   echo $VERSION
@@ -22,6 +22,14 @@ CHROOT=${1:-'/var/tmp/rhel5-x86_64'}
 shift
 chmod a+rx $CHROOT
 CHROOT=`cd $CHROOT; pwd`
+LOCKDIR=$CHROOT/.lock
+LOCK=$LOCKDIR/$$
+echo My PID is $$
+mkdir -p $LOCK || exit 1
+for pid in $LOCKDIR/*
+do
+  ls -ld $pid
+done
 
 FKILL="fuser -v -k -i -SIGTERM $CHROOT"
 test -x /bin/busybox && {
@@ -133,11 +141,15 @@ $SETARCH chroot "$CHROOT" /usr/bin/env -i \
 
 test "$kill" = "true" && $FKILL
 
+rmdir $LOCK
+
 orphans() {
   type busybox || return 0
   PROCS=$(busybox fuser $1)
   RET=$?
   test -n "$PROCS" && {
+    echo "$basename: Filesystems not umounted (check PIDs)"
+    echo
     echo Following processes are still running under $CHROOT:
     for i in $PROCS
     do
@@ -145,18 +157,18 @@ orphans() {
     done
     printf "Do you want to kill them? (y/N) "
     read ans
+    set -x
     echo $ans | grep -iq ^y && \
-      { echo "Killing $PROCS..."; kill $PROCS && RET=1;}
+      { echo "Killing $PROCS..."; busybox kill -HUP $PROCS && RET=0;}
   }
   return $RET
 }
 
 {
 echo
-if ! orphans $CHROOT; then
+if rmdir $LOCKDIR 2>/dev/null; then
   umounty $CHROOT && echo $basename: Filesystems successfully umounted
 else
-  echo
-  echo "$basename: Filesystems not umounted (check PIDs above)"
+  orphans $CHROOT
 fi
 } 1>&2
