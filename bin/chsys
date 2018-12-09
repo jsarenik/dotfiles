@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=0.10.1-$(md5sum $0 | cut -b-5)
+VERSION=0.10.2-$(md5sum $0 | cut -b-5)
 
 test "$1" = "-V" && {
   echo $VERSION
@@ -74,9 +74,8 @@ umounty() {
 }
 
 {
-while mkdir $LOCKDIR/mount
-do sleep 1
-done
+L=$LOCKDIR/mount
+I=0; while ! mkdir $L; do sleep 1; I=$((I+1)); test $I -lt 10 || exit 1; done
 mounty sysfs /sys -n -t sysfs
 mounty proc /proc -n -t proc
 mounty devpts /dev/pts -n -t devpts -o newinstance
