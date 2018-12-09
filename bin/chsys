@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=0.10.2-$(md5sum $0 | cut -b-5)
+VERSION=0.10.3-$(md5sum $0 | cut -b-5)
 
 test "$1" = "-V" && {
   echo $VERSION
@@ -23,21 +23,17 @@ shift
 chmod a+rx $CHROOT
 CHROOT=`cd $CHROOT; pwd`
 LOCKDIR=$CHROOT/.lock
-LOCK=$LOCKDIR/$$
-echo My PID is $$
-mkdir -p $LOCK || exit 1
-for pid in $LOCKDIR/*
-do
-  ls -ld $pid
-done
+test -d $LOCKDIR || mkdir $LOCKDIR
 
-FKILL="fuser -v -k -i -SIGTERM $CHROOT"
-test -x /bin/busybox && {
-  FKILL="fuser -k -SIGTERM $CHROOT"
+busybox fuser >/dev/null 2>&1
+test $? -eq 0 && {
+  FUSER="busybox fuser $CHROOT"
+} || {
+  type fuser 2>/dev/null && FUSER="fuser $CHROOT"
 }
 
 SHELL=/bin/sh
-test "$1" = "-k" && { kill=true; shift; }
+test "$1" = "-k" && { kill=y; shift; }
 test "$1" = "-s" && { SHELL=$2; shift 2; }
 test "$*" != "" && { CMDS="-c '$*'"; }
 
@@ -64,18 +60,25 @@ mounty() {
 }
 
 umounty() {
-  mount | grep -w "$1" | while read a b c d
+  L=$LOCKDIR/mount
+  mkdir $LOCKDIR
+  I=0; while ! mkdir $L; do sleep 1; I=$((I+1)); test $I -lt 9 || exit 1; done
+  mount | grep -w "$CHROOT" | while read a b c d
     do echo $c
-  done | grep -v "^$1$" | sort -r | while read a
+  done | grep -v "^$CHROOT\$" | sort -r | while read a
   do
     echo -n "$basename: Umounting $a... "
     umount $a && echo ok || { echo FAILED; return 1; }
   done
+  echo $basename: Filesystems successfully umounted
+  rmdir $LOCKDIR/mount
+  rmdir $LOCKDIR
 }
 
 {
 L=$LOCKDIR/mount
-I=0; while ! mkdir $L; do sleep 1; I=$((I+1)); test $I -lt 10 || exit 1; done
+I=0; while ! mkdir $L; do sleep 1; I=$((I+1)); test $I -lt 9 || exit 1; done
+
 mounty sysfs /sys -n -t sysfs
 mounty proc /proc -n -t proc
 mounty devpts /dev/pts -n -t devpts -o newinstance
@@ -85,6 +88,10 @@ test -n "$banner" && echo $basename: Filesystems mounting done
 echo $basename: Changing to $CHROOT
 rmdir $LOCKDIR/mount
 } 1>&2
+
+LOCK=$LOCKDIR/$$
+mkdir $LOCK || exit 1
+echo $basename: My LOCK is $LOCK
 
 addfile () {
   test "$1" = "-o" && { OVER=1; cp $2 $CHROOT/$2; return 0; }
@@ -142,13 +149,11 @@ $SETARCH chroot "$CHROOT" /usr/bin/env -i \
   $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec $SHELL ${CMDS:-"-il"}; }" \
   || true
 
-test "$kill" = "true" && $FKILL
-
 rmdir $LOCK
 
 orphans() {
-  type busybox || return 0
-  PROCS=$(busybox fuser $1)
+  test -n "$FUSER" || return 0
+  PROCS=$($FUSER)
   RET=$?
   test -n "$PROCS" && {
     echo "$basename: Filesystems not umounted (check PIDs)"
@@ -158,20 +163,17 @@ orphans() {
     do
       echo $i $(cat /proc/$i/cmdline | tr '\0' ' ')
     done
-    printf "Do you want to kill them? (y/N) "
-    read ans
-    set -x
-    echo $ans | grep -iq ^y && \
-      { echo "Killing $PROCS..."; busybox kill -HUP $PROCS && RET=0;}
-  }
+    test -n "$kill" || {
+      printf "Do you want to kill them? (y/N) "
+      read kill
+    }
+    echo $kill | grep -iq ^y && \
+      { echo "Killing $PROCS..."; kill -HUP $PROCS && RET=0;}
+}
   return $RET
 }
 
 {
 echo
-if rmdir $LOCKDIR 2>/dev/null; then
-  umounty $CHROOT && echo $basename: Filesystems successfully umounted
-else
-  orphans $CHROOT
-fi
+if rmdir $LOCKDIR 2>/dev/null; then umounty; else orphans; fi
 } 1>&2
