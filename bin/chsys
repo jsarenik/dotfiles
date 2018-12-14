@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=0.10.6-$(md5sum $0 | cut -b-5)
+VERSION=0.10.7-$(md5sum $0 | cut -b-5)
 
 test "$1" = "-V" && {
   echo $VERSION
@@ -61,7 +61,6 @@ mounty() {
 
 umounty() {
   L=$LOCKDIR/mount
-  mkdir $LOCKDIR
   I=0; while ! mkdir $L; do sleep 1; I=$((I+1)); test $I -lt 9 || exit 1; done
   mount | grep -w "$CHROOT" | while read a b c d
     do echo $c
