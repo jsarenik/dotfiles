@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=0.10.7-$(md5sum $0 | cut -b-5)
+VERSION=0.10.8-$(md5sum $0 | cut -b-5)
 
 test "$1" = "-V" && {
   echo $VERSION
@@ -29,7 +29,7 @@ busybox fuser >/dev/null 2>&1
 test $? -eq 0 && {
   FUSER="busybox fuser $CHROOT"
 } || {
-  type fuser 2>/dev/null && FUSER="fuser $CHROOT"
+  type fuser >/dev/null 2>&1 && FUSER="fuser $CHROOT"
 }
 
 SHELL=/bin/sh
@@ -39,9 +39,11 @@ test "$*" != "" && { CMDS="-c '$*'"; }
 
 MTAB=$CHROOT/etc/mtab
 rm $MTAB
+grep "$CHROOT " /proc/mounts && > $MTAB || {
 # This is needed mainly for Arch Linux's pacman
 grep -w / /proc/mounts > $MTAB
 unset MTAB
+}
 
 mountprint(){
   printf "\t" \
@@ -85,11 +87,10 @@ mounty tmpfs /tmp -t tmpfs
 test -n "$banner" && echo $basename: Filesystems mounting done
 echo $basename: Changing to $CHROOT
 rmdir $LOCKDIR/mount
-} 1>&2
-
 LOCK=$LOCKDIR/$$
 mkdir $LOCK || exit 1
 echo $basename: My LOCK is $LOCK
+} 1>&2
 
 addfile () {
   test "$1" = "-o" && { shift; rm $CHROOT/$1; return 0; }
