@@ -47,3 +47,16 @@ setxkbmap -query
 
 CAPSTATE=`xset -q | grep -Eo "[0-9]+: Caps Lock:\s+\S+" | awk '{print $4}'`
 test "$CAPSTATE" = "on" && xdotool key Caps_Lock
+
+##setxkbmap dvorak,il
+#setxkbmap dvorak
+
+##	setxkbmap -option ""
+##	setxkbmap -option "grp_led:scroll"
+##	setxkbmap -option "compose:ralt"
+##	setxkbmap -option "ctrl:nocaps"
+##
+##	setxkbmap -option "grp:rwin_toggle"
+#setxkbmap -option "compose:rctrl"
+
+## setxkbmap -query
