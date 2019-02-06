@@ -1,8 +1,10 @@
+#!/bin/echo READ THE SOURCE
 # This is meant to be sourced, e.g.
-# cat <<EOF >> ~/.bashrc
+# cat <<EOF >> ~/.ashrc
 # . $HOME/bin/ssh-agent.sh
 # EOF
 
+test -r /dev/urandom || return 1
 AFILE=$HOME/.myagent.sh
 
 test -S "$SSH_AUTH_SOCK" && {
@@ -10,12 +12,12 @@ test -S "$SSH_AUTH_SOCK" && {
   echo "echo Using pre-initialized SSH Agent"
 } > "$AFILE"
 
-touch "$AFILE" || exit 1
+touch "$AFILE" || return 1
 until
   . "$AFILE"
   test -S "$SSH_AUTH_SOCK"
 do
-  ssh-agent -s > "$AFILE" || exit 1
+  ssh-agent -s > "$AFILE" || return 1
 done
 
 unset AFILE
