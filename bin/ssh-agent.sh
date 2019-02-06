@@ -14,10 +14,11 @@ test -S "$SSH_AUTH_SOCK" && {
 
 touch "$AFILE" || return 1
 until
-  . "$AFILE"
+  . "$AFILE" >/dev/null
   test -S "$SSH_AUTH_SOCK"
 do
   ssh-agent -s > "$AFILE" || return 1
 done
 
+echo SSH agent pid $SSH_AGENT_PID
 unset AFILE
