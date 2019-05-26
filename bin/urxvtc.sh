@@ -8,5 +8,6 @@
 RANDX=$((RANDOM%(X_resx-650)))
 RANDY=$((RANDOM%(X_resy-570)))
 
-exec urxvtc -geometry 80x35+$RANDX+$RANDY "$@"
+#exec urxvtc -geometry 80x24+$RANDX+$RANDY "$@"
+exec st -f -*-terminus-*-*-*-*-24-*-*-*-*-*-*-* -g 80x24+$RANDX+$RANDY "$@"
 #exec urxvtc "$@"
