@@ -1,8 +1,8 @@
 #!/bin/sh
 
-VERSION=0.12.1-$(sed 1d $0 | md5sum | cut -b-5)
+VERSION=0.12.2-$(sed 1d $0 | md5sum | cut -b-5)
 
-a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd $a; pwd)
+a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
 test "$1" = "--update" && {
   wget -O chsys-new https://raw.githubusercontent.com/jsarenik/dotfiles/master/bin/chsys
   exec sh -c "cd $BINDIR; echo \"#!$(which sh)\" > chsys; sed 1d chsys-new >> chsys; chmod a+x chsys; rm chsys-new;"
