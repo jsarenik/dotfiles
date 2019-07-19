@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=0.12.4-$(sed 1d $0 | md5sum | cut -b-5)
+VERSION=0.13.0-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
 test "$1" = "--update" && {
@@ -161,7 +161,7 @@ echo "$CHROOT" | grep -q "i386" && SETARCH="setarch i386"
 
 $SETARCH chroot "$CHROOT" /usr/bin/env -i \
   SHELL=$SHELL HOME=/root TERM="$TERM" PS1="$PS1" \
-  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  PATH=${CHPATH:-"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"} \
   DISPLAY=$DISPLAY \
   $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec $SHELL ${CMDS:-"-il"}; }" \
   || true
