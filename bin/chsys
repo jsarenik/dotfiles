@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.14.3
+VER=0.14.4
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -15,10 +15,15 @@ update() {
 test "$1" = "--update" && update
 trap "" INT QUIT EXIT
 
+test -d "$1" && {
+  CHROOT=$1
+  shift
+}
 
 usage() {
   cat <<-EOF
-	Usage: $0 [OPTION]... <chroot_dir> [COMMAND]...
+	Usage: $0 <dir> [OPTION]... [COMMAND]...
+	Usage: $0 [OPTION]... <dir> [COMMAND]...
 	Mount pseudo filesystems and enter chroot environment.
 	Optionally run a command and exit.
 
@@ -48,18 +53,21 @@ esac
 done
 shift $((OPTIND-1))
 
-test `id -u` -eq 0 || { echo "You have to be root!"; exit 1; }
+test $(id -u) -eq 0 || { echo "You have to be root!"; exit 1; }
 PATH=/usr/sbin:$PATH:$BINDIR
 
-test -d "$1" || {
+test -d "$1" && {
+  CHROOT=${1:-'/var/tmp/rhel5-x86_64'}
+  shift
+}
+
+test -d "$CHROOT" || {
   echo Directory $1 does not exist.
   exit 1
 }
 
-CHROOT=${1:-'/var/tmp/rhel5-x86_64'}
-shift
 chmod a+rx $CHROOT
-CHROOT=`cd $CHROOT; pwd`
+CHROOT=$(cd $CHROOT; pwd)
 LOCKDIR=$CHROOT/.lock
 test -d $LOCKDIR || mkdir $LOCKDIR
 
