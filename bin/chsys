@@ -1,25 +1,55 @@
 #!/bin/sh
 
-VERSION=0.13.0-$(sed 1d $0 | md5sum | cut -b-5)
+VER=0.14.0
+VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
-test "$1" = "--update" && {
-  cd $BINDIR
-  wget -O chsys-new https://raw.githubusercontent.com/jsarenik/dotfiles/master/bin/chsys
-  exec sh -c "echo \"#!$(which sh)\" > chsys; sed 1d chsys-new >> chsys; chmod a+x chsys; rm chsys-new;"
+
+basename=${0##*/}
+
+update() {
+  CHNEW=/tmp/chsys-new-$$
+  exec sh -c "wget -q -O $CHNEW https://raw.githubusercontent.com/jsarenik/dotfiles/master/bin/chsys; VER=$(echo $VER | tr -d .); VERNEW=\$(grep ^VER= $CHNEW || echo 0000); test \$VERNEW -gt \$VER && { echo \"#!$(which sh)\" > $BINDIR/$basename; cat $CHNEW | sed 1d >> $BINDIR/$basename; chmod a+x $BINDIR/$basename; } || { echo No update found.; exit 1; } ; rm $CHNEW"
 }
 
+test "$1" = "--update" && update
 trap "" INT QUIT EXIT
 
-test "$1" = "-V" && {
-  echo $VERSION
-  exit
+
+usage() {
+  cat <<-EOF
+	Usage: $0 [OPTION]... <chroot_dir> [COMMAND]...
+	Mount pseudo filesystems and enter chroot environment.
+	Optionally run a command and exit.
+
+	Available options:
+	  -V                        print version
+	  -u                        update the script itself
+	  -k                        kill leftover processes on exit
+	  -s SHELL                  enter chroot using SHELL
+	  -d                        use static /dev
+	EOF
+  exit 1
 }
+
+SHELL=/bin/sh
+unset kill
+unset staticdev
+
+while getopts "Vuks:dh-" opt; do
+case $opt in
+  V) echo $VERSION; exit;;
+  u) update;;
+  k) kill=y;;
+  s) test -n "$OPTARG"; SHELL="$OPTARG";;
+  d) staticdev=y;;
+  *) usage;;
+esac
+done
+shift $((OPTIND-1))
 
 test `id -u` -eq 0 || { echo "You have to be root!"; exit 1; }
 PATH=/usr/sbin:$PATH:$BINDIR
-
-basename=${0##*/}
 
 test -d "$1" || {
   echo Directory $1 does not exist.
@@ -40,12 +70,7 @@ test $? -eq 0 && {
   type fuser >/dev/null 2>&1 && FUSER="fuser $CHROOT"
 }
 
-SHELL=/bin/sh
-unset kill
-unset staticdev
-test "$1" = "-k" && { kill=y; shift; }
-test "$1" = "-s" && { SHELL=$2; shift 2; }
-test "$1" = "-d" && { staticdev=y; shift; }
+
 test "$*" != "" && { CMDS="-c '$*'"; }
 
 MTAB=$CHROOT/etc/mtab
