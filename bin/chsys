@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.14.4
+VER=0.15.0
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -13,7 +13,12 @@ update() {
 }
 
 test "$1" = "--update" && update
-trap "" INT QUIT EXIT
+
+thisistheend()
+{
+  orphans && umounty
+  rmdir $LOCKDIR 2>/dev/null || true
+} 1>&2
 
 test -d "$1" && {
   CHROOT=$1
@@ -103,6 +108,7 @@ mounty() {
 }
 
 umounty() {
+  RET=1
   L=$LOCKDIR/mount
   UFAIL=$LOCKDIR/umountfail
   I=0; while ! mkdir $L; do sleep 1; I=$((I+1)); test $I -lt 9 || exit 1; done
@@ -115,8 +121,10 @@ umounty() {
   done
   test -r $UFAIL && rm $UFAIL || {
     echo $basename: Filesystems successfully umounted
+    RET=0
   }
   rmdir $L 2>/dev/null
+  return $RET
 }
 
 {
@@ -191,15 +199,6 @@ PS1='chsys:${CHROOT##*/}\$ '
 
 echo "$CHROOT" | grep -q "i386" && SETARCH="setarch i386"
 
-$SETARCH chroot "$CHROOT" /usr/bin/env -i \
-  SHELL=$SHELL HOME=/root TERM="$TERM" PS1="$PS1" \
-  PATH=${CHPATH:-"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"} \
-  DISPLAY=$DISPLAY \
-  $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec $SHELL ${CMDS:-"-il"}; }" \
-  || true
-
-rmdir $LOCK
-
 orphans() {
   test -n "$FUSER" || return 0
   PROCS=$($FUSER 2>/dev/null)
@@ -223,8 +222,12 @@ orphans() {
   return $RET
 }
 
-{
-echo
-orphans && umounty
-rmdir $LOCKDIR 2>/dev/null
-} 1>&2
+$SETARCH chroot "$CHROOT" /usr/bin/env -i \
+  SHELL=$SHELL HOME=/root TERM="$TERM" PS1="$PS1" \
+  PATH=${CHPATH:-"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"} \
+  DISPLAY=$DISPLAY \
+  $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec su - ${CMDS}; }" \
+  || true
+
+rmdir $LOCK
+thisistheend
