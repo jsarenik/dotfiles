@@ -9,7 +9,7 @@ basename=${0##*/}
 
 update() {
   CHNEW=$BINDIR/chsys-new-$$
-  exec sh -c "wget -q -O $CHNEW https://raw.githubusercontent.com/jsarenik/dotfiles/master/bin/chsys; VER=$(echo $VER | tr -d .); VERNEW=\$(grep ^VER= $CHNEW | cut -d= -f2 | tr -d . || echo 0000); test \$VERNEW -gt \$VER && { echo \"#!$(which sh)\" > $BINDIR/$basename; cat $CHNEW | sed 1d >> $BINDIR/$basename; chmod a+x $BINDIR/$basename; } || { echo No update found.; exit 1; } ; rm $CHNEW"
+  exec sh -c "RET=1; wget -q -O $CHNEW https://raw.githubusercontent.com/jsarenik/dotfiles/master/bin/chsys; VER=$(echo $VER | tr -d .); VERNEW=\$(grep ^VER= $CHNEW | cut -d= -f2 | tr -d . || echo 0000); test \$VERNEW -gt \$VER && { echo \"#!$(which sh)\" > $BINDIR/$basename && cat $CHNEW | sed 1d >> $BINDIR/$basename && chmod a+x $BINDIR/$basename && RET=0; } || { echo No update found.; } ; rm $CHNEW; exit \$RET;"
 }
 
 test "$1" = "--update" && update
