@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.15.0
+VER=0.16.0
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -149,18 +149,24 @@ basicdev() {
   mkdir $CHROOT/dev/shm
 }
 
-mounty sysfs /sys -n -t sysfs
-mounty proc /proc -n -t proc
+mounty /sys /sys -n --rbind
+mounty /proc /proc -n --rbind
 
 test -n "$staticdev" && {
   test -r $CHROOT/dev/basicdev || basicdev; touch $CHROOT/dev/basicdev
+  mounty /dev/pts /dev/pts -n --bind
 } || {
-  mounty /dev /dev -n -o bind
+  mounty /dev /dev -n --rbind
 }
 
-mounty devpts /dev/pts -n -t devpts -o newinstance
 mounty shm /dev/shm -t tmpfs
-mounty tmpfs /tmp -t tmpfs
+
+mountpoint /tmp && {
+  mounty /tmp /tmp -n --rbind
+} || {
+  mounty tmpfs /tmp -t tmpfs
+}
+
 rmdir $LOCKDIR/mount
 LOCK=$LOCKDIR/$$
 mkdir $LOCK || exit 1
@@ -222,11 +228,11 @@ orphans() {
   return $RET
 }
 
-$SETARCH chroot "$CHROOT" /usr/bin/env -i \
+$SETARCH env -i \
   SHELL=$SHELL HOME=/root TERM="$TERM" PS1="$PS1" \
   PATH=${CHPATH:-"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"} \
   DISPLAY=$DISPLAY \
-  $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec su - ${CMDS}; }" \
+  chroot "$CHROOT" $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec su - ${CMDS}; }" \
   || true
 
 rmdir $LOCK
