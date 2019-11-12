@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.17.6
+VER=0.17.7
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -165,9 +165,11 @@ test -n "$staticdev" && {
 
 mounty devpts /dev/pts -n -t devpts -o newinstance,ptmxmode=660,mode=620,gid=5
 chmod a+rw /dev/null /dev/*random
-test -h $CHROOT/dev/ptmx || \
+test -c $CHROOT/dev/pts/ptmx && {
+  test -h $CHROOT/dev/ptmx || \
 	{ rm $CHROOT/dev/ptmx && ln -nsf dev/ptmx $CHROOT/dev/ptmx; }
-chgrp tty $CHROOT/dev/pts/ptmx
+}
+chgrp 5 $CHROOT/dev/pts/ptmx
 mounty shm /dev/shm -n -t tmpfs
 
 mountpoint /tmp && {
