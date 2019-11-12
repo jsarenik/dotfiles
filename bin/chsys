@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.17.3
+VER=0.17.4
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -180,7 +180,7 @@ mkdir $LOCK || exit 1
 
 addfile () {
   test -r $1 || return 1
-  test "$2" = "-o" && { rm $CHROOT/$1; }
+  test "$2" = "-o" && { test -r $CHROOT/$1-backup || cp $CHROOT/$1 $CHROOT/$1-backup; rm $CHROOT/$1; }
   test -r $CHROOT/$1 || cp $1 $CHROOT/$1
 }
 
