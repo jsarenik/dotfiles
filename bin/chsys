@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.18.03
+VER=0.18.04
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -167,6 +167,7 @@ test -n "$staticdev" && {
 mounty devpts /dev/pts -n -t devpts -o newinstance,ptmxmode=660,mode=620,gid=5
 chmod a+rw /dev/null /dev/*random
 test -c $CHROOT/dev/pts/ptmx && {
+  mount -o remount,ptmxmode=660 /dev/pts
   rm $CHROOT/dev/ptmx
   ln -nsf pts/ptmx $CHROOT/dev/ptmx
   chgrp 5 $CHROOT/dev/pts/ptmx
