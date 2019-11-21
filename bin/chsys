@@ -1,10 +1,9 @@
 #!/bin/sh
 
-VER=0.18.04
+VER=0.19.00
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
-
 basename=${0##*/}
 
 update() {
@@ -12,18 +11,12 @@ update() {
   exec sh -c "RET=1; wget -q -O $CHNEW https://raw.githubusercontent.com/jsarenik/dotfiles/master/bin/chsys; VER=$(echo $VER | tr -d .); VERNEW=\$(grep ^VER= $CHNEW | cut -d= -f2 | tr -d . || echo 0000); test \$VERNEW -gt \$VER && { echo \"#!$(which sh)\" > $BINDIR/$basename && cat $CHNEW | sed 1d >> $BINDIR/$basename && chmod a+x $BINDIR/$basename && RET=0; } || { echo No update found.; } ; rm $CHNEW; exit \$RET;"
 }
 
-test "$1" = "--update" && update
-
 thisistheend()
 {
+  rmdir $LOCK
   orphans && umounty
   rmdir $LOCKDIR 2>/dev/null || true
 } 1>&2
-
-test -d "$1" && {
-  CHROOT=${1%%/}
-  shift
-}
 
 usage() {
   cat <<-EOF
@@ -40,63 +33,6 @@ usage() {
 	  -d                        use static /dev
 	EOF
   exit 1
-}
-
-SHELL=/bin/sh
-unset kill
-unset staticdev
-
-while getopts "Vuks:dh-" opt; do
-case $opt in
-  V) echo $VERSION; exit;;
-  u) update;;
-  k) kill=y;;
-  s) test -n "$OPTARG"; SHELL="$OPTARG";;
-  d) staticdev=y;;
-  *) usage;;
-esac
-done
-shift $((OPTIND-1))
-
-test $(id -u) -eq 0 || { echo "You have to be root!"; exit 1; }
-PATH=/usr/sbin:$PATH:$BINDIR
-
-test -d "$1" && {
-  CHROOT=${1:-'/var/tmp/rhel5-x86_64'}
-  shift
-}
-
-test -d "$CHROOT" || {
-  echo Directory $1 does not exist.
-  exit 1
-}
-
-test -x "$CHROOT/$SHELL" || {
-  echo $SHELL not available in $CHROOT.
-  exit 1
-}
-
-chmod a+rx $CHROOT
-CHROOT=$(cd $CHROOT; pwd)
-LOCKDIR=$CHROOT/.lock
-test -d $LOCKDIR || mkdir $LOCKDIR
-
-busybox fuser >/dev/null 2>&1
-test $? -eq 0 && {
-  FUSER="busybox fuser $CHROOT"
-} || {
-  type fuser >/dev/null 2>&1 && FUSER="fuser $CHROOT"
-}
-
-
-test "$*" != "" && { CMDS="-c '$*'"; }
-
-MTAB=$CHROOT/etc/mtab
-rm $MTAB
-grep "$CHROOT " /proc/mounts && > $MTAB || {
-# This is needed mainly for Arch Linux's pacman
-grep -w / /proc/mounts > $MTAB
-unset MTAB
 }
 
 mountprint(){
@@ -129,12 +65,9 @@ umounty() {
     RET=0
   }
   rmdir $L 2>/dev/null
+  restoreconf etc/hosts
   return $RET
 }
-
-{
-L=$LOCKDIR/mount
-I=0; while ! mkdir $L; do sleep 1; I=$((I+1)); test $I -lt 9 || exit 1; done
 
 # This function is called only when /dev is not bind-mounted
 basicdev() {
@@ -154,6 +87,129 @@ basicdev() {
   mkdir $CHROOT/dev/shm
   touch $CHROOT/dev/.basicdev
 }
+
+addfile () {
+  test -r $1 || return 1
+  test "$2" = "-o" && {
+    test -r $CHROOT/$1-backup || cp $CHROOT/$1 $CHROOT/$1-backup
+    rm $CHROOT/$1
+  }
+  test -r $CHROOT/$1 || cp $1 $CHROOT/$1
+}
+
+addline () {
+  test "$1" = "-f" && { force=1; shift; }
+  file="$1"
+  pat="$2"
+  shift
+  shift
+  while ! test -w "$file"; do touch "$file"; done
+  if [ -n "$force" ]
+    then sed -i "\^$pat^d" "$file"
+    else grep -q "$pat" "$file" && return 1
+  fi
+  echo "$@" >> $file
+}
+
+orphans() {
+  test -n "$FUSER" || return 0
+  PROCS=$($FUSER 2>/dev/null)
+  RET=0
+  test -n "$PROCS" && {
+    RET=1
+    echo "$basename: Filesystems not umounted (check PIDs)"
+    echo
+    echo Following processes are still running under $CHROOT:
+    for i in $PROCS
+    do
+      echo $i $(cat /proc/$i/cmdline | tr '\0' ' ')
+    done
+    test -n "$kill" || {
+      printf "Do you want to kill them? (y/N) "
+      read kill
+    }
+    echo $kill | grep -iq ^y && \
+      { echo "Killing $PROCS..."; kill -HUP $PROCS && RET=0;}
+}
+  return $RET
+}
+
+restoreconf() {
+  test -r $CHROOT/$1-backup && cat $CHROOT/$1-backup > $CHROOT/$1
+}
+
+#########################################################################3
+#########################################################################3
+#########################################################################3
+
+test "$1" = "--update" && update
+
+# For backward compatibility, try to find CHROOT both before and after
+# command-line options
+test -d "$1" && { CHROOT=${1%%/}; shift; }
+
+# Set defaults
+SHELL=/bin/sh
+unset kill
+unset staticdev
+while getopts "Vuks:dh-" opt; do
+case $opt in
+  V) echo $VERSION; exit;;
+  u) update;;
+  k) kill=y;;
+  s) test -n "$OPTARG"; SHELL="$OPTARG";;
+  d) staticdev=y;;
+  *) usage;;
+esac
+done
+shift $((OPTIND-1))
+
+test $(id -u) -eq 0 || { echo "You have to be root!"; exit 1; }
+PATH=/usr/sbin:$PATH:$BINDIR
+
+# For backward compatibility, try to find CHROOT both before and after
+# command-line options
+test -d "$1" && { CHROOT=${1}; shift; }
+
+test -n "$CHROOT" || {
+  echo No chroot directory specified.
+  usage
+}
+test -d "$CHROOT" || {
+  echo Directory $1 does not exist.
+  usage
+}
+
+test -x "$CHROOT/$SHELL" || {
+  echo $SHELL not available in $CHROOT.
+  usage
+}
+
+chmod a+rx $CHROOT
+CHROOT=$(cd $CHROOT; pwd)
+LOCKDIR=$CHROOT/.lock
+test -d $LOCKDIR || mkdir $LOCKDIR
+
+busybox fuser >/dev/null 2>&1
+test $? -eq 0 && {
+  FUSER="busybox fuser $CHROOT"
+} || {
+  type fuser >/dev/null 2>&1 && FUSER="fuser $CHROOT"
+}
+
+test "$*" != "" && { CMDS="-c '$*'"; }
+
+MTAB=$CHROOT/etc/mtab
+rm $MTAB
+grep "$CHROOT " /proc/mounts && > $MTAB || {
+# This is needed mainly for Arch Linux's pacman
+grep -w / /proc/mounts > $MTAB
+unset MTAB
+}
+
+{
+L=$LOCKDIR/mount
+I=0; while ! mkdir $L; do sleep 1; I=$((I+1)); test $I -lt 9 || exit 1; done
 
 mounty sys /sys -n -t sysfs
 mounty proc /proc -n -t proc
@@ -188,12 +244,6 @@ LOCK=$LOCKDIR/$$
 mkdir $LOCK || exit 1
 } 1>&2
 
-addfile () {
-  test -r $1 || return 1
-  test "$2" = "-o" && { test -r $CHROOT/$1-backup || cp $CHROOT/$1 $CHROOT/$1-backup; rm $CHROOT/$1; }
-  test -r $CHROOT/$1 || cp $1 $CHROOT/$1
-}
-
 # Files that are system-dependent
 # /etc/resolv.conf
 # /etc/hosts, /etc/fstab, /etc/passwd,
@@ -204,45 +254,9 @@ addfile /etc/hosts -o
 addfile /etc/resolv.conf -o
 addfile /etc/krb5.conf
 
-addline () {
-  test "$1" = "-f" && { force=1; shift; }
-  file="$1"
-  pat="$2"
-  shift
-  shift
-  while ! test -w "$file"; do touch "$file"; done
-  if [ -n "$force" ]
-    then sed -i "\^$pat^d" "$file"
-    else grep -q "$pat" "$file" && return 1
-  fi
-  echo "$@" >> $file
-}
 PS1='chsys:${CHROOT##*/}\$ '
 
 echo "$CHROOT" | grep -q "i386" && SETARCH="setarch i386"
-
-orphans() {
-  test -n "$FUSER" || return 0
-  PROCS=$($FUSER 2>/dev/null)
-  RET=0
-  test -n "$PROCS" && {
-    RET=1
-    echo "$basename: Filesystems not umounted (check PIDs)"
-    echo
-    echo Following processes are still running under $CHROOT:
-    for i in $PROCS
-    do
-      echo $i $(cat /proc/$i/cmdline | tr '\0' ' ')
-    done
-    test -n "$kill" || {
-      printf "Do you want to kill them? (y/N) "
-      read kill
-    }
-    echo $kill | grep -iq ^y && \
-      { echo "Killing $PROCS..."; kill -HUP $PROCS && RET=0;}
-}
-  return $RET
-}
 
 $SETARCH env -i \
   SHELL=$SHELL HOME=/root TERM="$TERM" PS1="$PS1" \
@@ -251,10 +265,4 @@ $SETARCH env -i \
   chroot "$CHROOT" $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec su - ${CMDS}; }" \
   || true
 
-restoreconf() {
-  test -r $CHROOT/$1-backup && cat $CHROOT/$1-backup > $CHROOT/$1
-}
-
-restoreconf etc/hosts
-rmdir $LOCK
 thisistheend
