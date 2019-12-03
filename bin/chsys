@@ -13,9 +13,9 @@ update() {
 
 thisistheend()
 {
-  rmdir $LOCK
-  orphans && umounty
-  rmdir $LOCKDIR 2>/dev/null || true
+  rmdir $1/$$
+  orphans && umounty && rmdir $1/mount
+  rmdir $1 2>/dev/null || true
 } 1>&2
 
 usage() {
@@ -265,4 +265,4 @@ $SETARCH env -i \
   chroot "$CHROOT" $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec su - ${CMDS}; }" \
   || true
 
-thisistheend
+thisistheend $LOCKDIR
