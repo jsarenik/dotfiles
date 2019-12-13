@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.19.02
+VER=0.19.03
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -8,7 +8,22 @@ basename=${0##*/}
 
 update() {
   CHNEW=$BINDIR/chsys-new-$$
-  exec sh -c "RET=1; wget -q -O $CHNEW https://raw.githubusercontent.com/jsarenik/dotfiles/master/bin/chsys; VER=$(echo $VER | tr -d .); VERNEW=\$(grep ^VER= $CHNEW | cut -d= -f2 | tr -d . || echo 0000); test \$VERNEW -gt \$VER && { echo \"#!$(which sh)\" > $BINDIR/$basename && cat $CHNEW | sed 1d >> $BINDIR/$basename && chmod a+x $BINDIR/$basename && RET=0; } || { echo No update found.; } ; rm $CHNEW; exit \$RET;"
+  URL=https://raw.githubusercontent.com/jsarenik/dotfiles/master/bin/chsys
+  exec sh -ec "
+    RET=1;
+    echo Checking for update...;
+    wget -q -O $CHNEW $URL;
+    VERNEW=\$(grep ^VER= $CHNEW | cut -d= -f2 || echo 0000);
+    test x"\$VERNEW" != x"$VER" && {
+      echo Updating from $VER to \$VERNEW
+      echo \"#!\$(which sh)\" > $BINDIR/$basename;
+      cat $CHNEW | sed 1d >> $BINDIR/$basename;
+      chmod a+x $BINDIR/$basename;
+      RET=0;
+    } || { echo No update found.; } ;
+    rm $CHNEW;
+    exit \$RET;
+  "
 }
 
 thisistheend()
