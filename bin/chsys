@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.19.03
+VER=0.19.04
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -155,7 +155,13 @@ orphans() {
       read kill
     }
     echo $kill | grep -iq ^y && \
-      { echo "Killing $PROCS..."; kill -HUP $PROCS && RET=0;}
+      { echo "Killing $PROCS with HUP..."; kill -HUP $PROCS && RET=0 \
+        || return $RET && echo "Sleeping..." && sleep 2 \
+        && echo "Killing $PROCS with TERM..." && kill -TERM $PROCS && RET=0 \
+        || return $RET && echo "Sleeping..." && sleep 1 \
+        && kill -0 $PROCS 2>/dev/null \
+        || return $RET && echo "Sleeping..." && sleep 2 \
+        && echo "Killing $PROCS with KILL..." && kill -KILL $PROCS && RET=0; }
 }
   return $RET
 }
