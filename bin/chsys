@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.19.04
+VER=0.19.05
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -99,8 +99,8 @@ mymkdir() {
 
 # This function is called only when /dev is not bind-mounted
 basicdev() {
-  mymknod tty 5 0 660 tty
-  mymknod tty1 4 1 660 tty
+  mymknod tty 5 0 660 5
+  mymknod tty1 4 1 660 5
   mymknod console 5 1 600
   mymknod urandom 1 9 444
   mymknod random 1 8
@@ -252,9 +252,11 @@ test -n "$staticdev" || {
 basicdev
 
 mounty devpts /dev/pts -n -t devpts -o newinstance,ptmxmode=660,mode=620,gid=5,nosuid,noexec
-rm -f $CHROOT/dev/ptmx
-mymknod pts/ptmx 5 2 660 tty
-ln -nsf pts/ptmx $CHROOT/dev/ptmx
+test -w $CHROOT/dev/ptmx && {
+  rm -f $CHROOT/dev/ptmx
+  mymknod pts/ptmx 5 2 660 5
+  ln -nsf pts/ptmx $CHROOT/dev/ptmx
+}
 mounty shm /dev/shm -n -t tmpfs -o mode=1777,nodev,nosuid
 
 mountpoint /tmp 2>/dev/null && {
