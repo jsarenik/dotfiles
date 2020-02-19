@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.19.05
+VER=0.19.06
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -219,7 +219,9 @@ test -x "${CHROOT}${SHELL}" -o -h "${CHROOT}${SHELL}" || {
 
 chmod a+rx $CHROOT
 CHROOT=$(cd $CHROOT; pwd)
-LOCKDIR=/tmp/chsys-lock${CHROOT}
+test -w /tmp && TMP=/tmp || TMP=$BINDIR/tmp
+test -d $TMP || mkdir $TMP
+LOCKDIR=$TMP/chsys-lock${CHROOT}
 test -d $LOCKDIR || mkdir -p $LOCKDIR
 
 busybox fuser >/dev/null 2>&1
