@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.19.07
+VER=0.20.00
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -58,9 +58,14 @@ mountprint(){
 mounty() {
   WHAT=$1
   DEST=${CHROOT}$2
-  ! test -d $DEST || grep $DEST /proc/mounts && return 1
+  ! test -d $DEST || grep -q "^$WHAT $DEST" /proc/mounts && return 1
   shift 2
   mountprint $WHAT $DEST && mount $* $WHAT $DEST;
+}
+
+myumount() {
+  echo -n "$basename: Umounting $1... "
+  umount $1 && echo ok || { echo failed; touch $UFAIL; }
 }
 
 umounty() {
@@ -70,11 +75,11 @@ umounty() {
   UFAIL=$LOCKDIR/umountfail
   mount | grep -w "$CHROOT" | while read a b c d
     do echo $c
-  done | grep -v "^$CHROOT\$" | sort -r | while read a
+  done | grep -v "^$CHROOT\$" | sort -ur | while read a
   do
-    echo -n "$basename: Umounting $a... "
-    umount $a && echo ok || { echo failed; touch $UFAIL; }
+    myumount $a
   done
+  grep -qw $CHROOT /proc/mounts && myumount $CHROOT
   test -r $UFAIL && rm $UFAIL || {
     echo $basename: Filesystems successfully umounted
     RET=0
@@ -219,6 +224,7 @@ test -x "${CHROOT}${SHELL}" -o -h "${CHROOT}${SHELL}" || {
 
 chmod a+rx $CHROOT
 CHROOT=$(cd $CHROOT; pwd)
+
 test -w /tmp && TMP=/tmp || TMP=$BINDIR/tmp
 test -d $TMP || mkdir $TMP
 LOCKDIR=$TMP/chsys-lock${CHROOT}
@@ -233,13 +239,8 @@ test $? -eq 0 && {
 
 test "$*" != "" && { CMDS="-c '$*'"; }
 
-MTAB=$CHROOT/etc/mtab
-rm $MTAB
-grep "$CHROOT " /proc/mounts && > $MTAB || {
-# This is needed mainly for Arch Linux's pacman
-grep -w / /proc/mounts > $MTAB
-unset MTAB
-}
+# Hack to make everybody (including Arch Linux and docker) happy
+grep -qw $CHROOT /proc/mounts || mount -o bind $CHROOT $CHROOT
 
 L=$LOCKDIR/mount
 mkdir $L 2>/dev/null && {
@@ -261,11 +262,24 @@ test -w $CHROOT/dev/pts/ptmx && {
 }
 mounty shm /dev/shm -n -t tmpfs -o mode=1777,nodev,nosuid
 
-mountpoint /tmp 2>/dev/null && {
+grep -qw /tmp /proc/mounts 2>/dev/null && {
   mounty /tmp /tmp -n -o bind
 } || {
   mounty tmpfs /tmp -n -t tmpfs
 }
+
+grep -qw $CHROOT/sys/fs/cgroup /proc/mounts \
+  || mounty cgroup /sys/fs/cgroup -o mode=0755 -t tmpfs
+while read a b c d rest
+do
+  CDIR=/sys/fs/cgroup/$a
+  test "$d" = "1" && {
+    grep -qw $CHROOT/$CDIR /proc/mounts || {
+      mkdir -p $CHROOT/$CDIR \
+        && mounty cgroup $CDIR -t cgroup -o $a 2>/dev/null
+    }
+  }
+done < $CHROOT/proc/cgroups
 } 1>&2
 
 mkdir $LOCKDIR/$$ || exit 1
@@ -288,7 +302,7 @@ $SETARCH env -i \
   SHELL=$SHELL HOME=/root TERM="$TERM" PS1="$PS1" \
   PATH=${CHPATH:-"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"} \
   DISPLAY=$DISPLAY \
-  chroot "$CHROOT" $SHELL -c "{ cat /proc/mounts >> /etc/mtab; cd; exec su - ${CMDS}; }" \
+  chroot "$CHROOT" $SHELL -c "cd; exec su - ${CMDS}" \
   || true
 
 thisistheend $LOCKDIR
