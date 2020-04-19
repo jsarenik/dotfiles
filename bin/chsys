@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.20.01
+VER=0.20.02
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -58,7 +58,7 @@ mountprint(){
 mounty() {
   WHAT=$1
   DEST=${CHROOT}$2
-  ! test -d $DEST || grep -q "^$WHAT $DEST" /proc/mounts && return 1
+  ! test -d $DEST || grep -qw "^$WHAT $DEST" /proc/mounts && return 1
   shift 2
   mountprint $WHAT $DEST && mount $* $WHAT $DEST;
 }
