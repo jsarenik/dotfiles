@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.20.02
+VER=0.20.03
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -260,13 +260,21 @@ test -w $CHROOT/dev/pts/ptmx && {
   mymknod pts/ptmx 5 2 660 5
   ln -nsf pts/ptmx $CHROOT/dev/ptmx
 }
-mounty shm /dev/shm -n -t tmpfs -o mode=1777,nodev,nosuid
+grep -qw /dev/shm /proc/mounts 2>/dev/null && {
+  mounty /dev/shm /dev/shm -n -o bind
+} || {
+  mounty shm /dev/shm -n -t tmpfs -o mode=1777,nodev,nosuid
+}
 
 grep -qw /tmp /proc/mounts 2>/dev/null && {
   mounty /tmp /tmp -n -o bind
 } || {
   mounty tmpfs /tmp -n -t tmpfs
 }
+
+test -d $CHROOT/var/lib/dbus && mounty /var/lib/dbus /var/lib/dbus -n -o bind
+test -d $CHROOT/var/run && mounty /var/run /var/run -n -o bind
+test -d $CHROOT/run && mounty /run /run -n -o bind
 
 grep -qw $CHROOT/sys/fs/cgroup /proc/mounts \
   || mounty cgroup /sys/fs/cgroup -o mode=0755 -t tmpfs
@@ -302,7 +310,7 @@ $SETARCH env -i \
   SHELL=$SHELL HOME=/root TERM="$TERM" PS1="$PS1" \
   PATH=${CHPATH:-"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"} \
   DISPLAY=$DISPLAY \
-  chroot "$CHROOT" $SHELL -c "cd; exec su - ${CMDS}" \
+  exec chroot "$CHROOT" $SHELL -c "cd; exec su - ${CMDS}" \
   || true
 
 thisistheend $LOCKDIR
