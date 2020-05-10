@@ -5,11 +5,15 @@ V=$(curl -s "https://github.com/go-gitea/gitea/releases" \
 LV=$(/usr/local/bin/gitea --version | awk '{print $3}')
 V=${V##*/}
 V=${V#v}
-test "$V" = "$LV" && { echo "No new version found. Exiting."; exit 1; }
 KEY=7C9E68152594688862D62AF62D9AE806EC1592E2
+ARCH=amd64
+F=gitea-${V}-linux-$ARCH
+# Remove old files
+ls -1 gitea-*-${ARCH}* 2>/dev/null | grep -v $V \
+  | while read old; do rm -v $old; done
+test "$V" = "$LV" && { echo "No new version found. Exiting."; exit 1; }
 gpg --list-keys $KEY \
   || gpg --keyserver pgp.mit.edu --recv $KEY
-F=gitea-${V}-linux-amd64
 URL=${1:-"https://github.com/go-gitea/gitea/releases/download/v$V/$F"}
 echo $V; echo $F; echo $URL
 wget -qc $URL $URL.sha256 $URL.asc
