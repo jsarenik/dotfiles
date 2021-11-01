@@ -141,30 +141,31 @@ addline () {
   echo "$@" >> $file
 }
 
+stillrunning() {
+  HOWLONG=$1; shift
+  timeout $HOWLONG sh -c "while kill -0 $*; do sleep 0.1; done"
+}
+
 orphans() {
-  test -n "$FUSER" || return 0
-  PROCS=$($FUSER 2>/dev/null)
+  PROCS=$($FUSER 2>/dev/null) || return 0
   RET=0
   test -n "$PROCS" && {
     RET=1
     echo "$basename: Filesystems not umounted (check PIDs)"
     echo
     echo Following processes are still running under $CHROOT:
-    for i in $PROCS
-    do
-      echo $i $(cat /proc/$i/cmdline | tr '\0' ' ')
-    done
+    echo $PROCS
     test -n "$kill" || {
       printf "Do you want to kill them? (y/N) "
       read kill
     }
     echo $kill | grep -iq ^y && \
       { echo "Killing $PROCS with HUP..."; kill -HUP $PROCS && RET=0 \
-        || return $RET && echo "Sleeping..." && sleep 2 \
+        || return $RET && echo "Sleeping..." && stillrunning 2 $PROCS \
         && echo "Killing $PROCS with TERM..." && kill -TERM $PROCS && RET=0 \
-        || return $RET && echo "Sleeping..." && sleep 1 \
+        || return $RET && echo "Sleeping..." && stillrunning 1 $PROCS \
         && kill -0 $PROCS 2>/dev/null \
-        || return $RET && echo "Sleeping..." && sleep 2 \
+        || return $RET && echo "Sleeping..." && stillrunning 2 $PROCS \
         && echo "Killing $PROCS with KILL..." && kill -KILL $PROCS && RET=0; }
 }
   return $RET
@@ -201,7 +202,7 @@ done
 shift $((OPTIND-1))
 
 test $(id -u) -eq 0 || { echo "You have to be root!"; exit 1; }
-PATH=/usr/sbin:$PATH:$BINDIR
+PATH=/busybox:/usr/sbin:$PATH:$BINDIR
 
 # For backward compatibility, try to find CHROOT both before and after
 # command-line options
@@ -229,14 +230,10 @@ test -d $TMP || mkdir $TMP
 LOCKDIR=$TMP/chsys-lock${CHROOT}
 test -d $LOCKDIR || mkdir -p $LOCKDIR
 
-busybox fuser >/dev/null 2>&1
-test $? -eq 0 && {
-  FUSER="busybox fuser $CHROOT"
-} || {
-  type fuser >/dev/null 2>&1 && FUSER="fuser $CHROOT"
-}
+FUSER="false"
+type fuser >/dev/null 2>&1 && FUSER="fuser $CHROOT"
 
-test "$*" != "" && { CMDS="-c '$*'"; }
+test "$*" = "" || { CMDS="-c '$*'"; }
 
 # Hack to make everybody (including Arch Linux and docker) happy
 grep -qw $CHROOT /proc/mounts || mount -o bind $CHROOT $CHROOT
