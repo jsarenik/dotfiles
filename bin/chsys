@@ -269,9 +269,11 @@ grep -qw /tmp /proc/mounts 2>/dev/null && {
   mounty tmpfs /tmp -n -t tmpfs
 }
 
-test -d $CHROOT/var/lib/dbus && mounty /var/lib/dbus /var/lib/dbus -n -o bind
+test -d /var/lib/dbus && test -d $CHROOT/var/lib/dbus \
+  && mounty /var/lib/dbus /var/lib/dbus -n -o bind
 test -d $CHROOT/var/run && mounty /var/run /var/run -n -o bind
 test -d $CHROOT/run && mounty /run /run -n -o bind
+#mounty run-tmpfs-$$ /run -n -t tmpfs -o noexec,nosuid,size=10M,mode=0755
 
 grep -qw $CHROOT/sys/fs/cgroup /proc/mounts \
   || mounty cgroup /sys/fs/cgroup -o mode=0755 -t tmpfs
