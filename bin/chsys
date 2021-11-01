@@ -73,9 +73,8 @@ umounty() {
   L=$LOCKDIR/umount
   mkdir $L 2>/dev/null || return 1
   UFAIL=$LOCKDIR/umountfail
-  mount | grep -w "$CHROOT" | while read a b c d
-    do echo $c
-  done | grep -v "^$CHROOT\$" | sort -ur | while read a
+  mount | grep -w "$CHROOT" | awk '{print $3}' | grep -v "^$CHROOT\$" \
+    | sort -ur | while read a
   do
     myumount $a
   done
