@@ -78,7 +78,7 @@ umounty() {
   do
     myumount $a
   done
-  grep -qw $CHROOT /proc/mounts && myumount $CHROOT
+  #grep -qw $CHROOT /proc/mounts && myumount $CHROOT
   test -r $UFAIL && rm $UFAIL || {
     echo $basename: Filesystems successfully umounted
     RET=0
