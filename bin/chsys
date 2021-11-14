@@ -61,6 +61,7 @@ mounty() {
   test -d $DEST || return 1
   test -h $DEST && return 1
   grep -qw "^$WHAT $DEST " /proc/mounts && return 1
+  echo $* | grep -q bind && { test -d $WHAT || return 1; }
   mkdir $DEST 2>/dev/null
   shift 2
   mountprint $WHAT $DEST && mount $* $WHAT $DEST;
