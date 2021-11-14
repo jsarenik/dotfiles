@@ -29,7 +29,7 @@ update() {
 thisistheend()
 {
   rmdir $1/$$
-  orphans && umounty && rmdir $1/mount
+  orphans && umounty $BINDROOT && rmdir $1/mount
   rmdir $1 2>/dev/null || true
 } 1>&2
 
@@ -81,7 +81,7 @@ umounty() {
   do
     myumount $a
   done
-  #grep -qw $CHROOT /proc/mounts && myumount $CHROOT
+  test -n "$1" && myumount $CHROOT
   test -r $UFAIL && rm $UFAIL || {
     echo $basename: Filesystems successfully umounted
     RET=0
@@ -242,7 +242,7 @@ type fuser >/dev/null 2>&1 && FUSER="fuser $CHROOT"
 test "$*" = "" || { CMDS="-c '$*'"; }
 
 # Hack to make everybody (including Arch Linux and docker) happy
-grep -qw $CHROOT /proc/mounts || mount -o bind $CHROOT $CHROOT
+grep -qw $CHROOT /proc/mounts || { mount -o bind $CHROOT $CHROOT && BINDROOT=1; }
 
 L=$LOCKDIR/mount
 grep -qw $CHROOT/proc /proc/mounts || rm -rf $L
