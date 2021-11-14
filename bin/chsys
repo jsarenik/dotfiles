@@ -146,8 +146,11 @@ addline () {
 }
 
 stillrunning() {
-  HOWLONG=$1; shift
-  timeout $HOWLONG sh -c "while kill -0 $*; do sleep 0.1; done"
+  HOWLONG=$1;
+  SIG=$2;
+  shift 2
+  echo "Killing processes with $SIG...";
+  timeout $HOWLONG sh -c "while true; do MPROCS=\$($FUSER 2>/dev/null) || break; for ps in \$MPROCS; do kill -0 \$ps && kill -$SIG \$ps || break; done; done; exit 0;"
 }
 
 orphans() {
