@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.21.06
+VER=0.21.07
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -157,7 +157,10 @@ orphans() {
     echo "$basename: Filesystems not umounted (check PIDs)"
     echo
     echo Following processes are still running under $CHROOT:
-    echo $PROCS
+    for i in $PROCS
+    do
+      echo $i $(cat /proc/$i/cmdline | tr '\0' ' ')
+    done
     test -n "$kill" || {
       printf "Do you want to kill them? (y/N) "
       read kill
