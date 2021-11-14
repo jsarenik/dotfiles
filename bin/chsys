@@ -169,25 +169,22 @@ orphans() {
       printf "Do you want to kill them? (y/N) "
       read kill
     }
-    echo $kill | grep -iq ^y && \
-      { echo "Killing $PROCS with HUP..."; kill -HUP $PROCS && RET=0 \
-        || return $RET && echo "Sleeping..." && stillrunning 2 $PROCS \
-        && echo "Killing $PROCS with TERM..." && kill -TERM $PROCS && RET=0 \
-        || return $RET && echo "Sleeping..." && stillrunning 1 $PROCS \
-        && kill -0 $PROCS 2>/dev/null \
-        || return $RET && echo "Sleeping..." && stillrunning 2 $PROCS \
-        && echo "Killing $PROCS with KILL..." && kill -KILL $PROCS && RET=0; }
-}
-  return $RET
+    echo $kill | grep -iq ^y \
+    && {
+      stillrunning 2 HUP \
+      || stillrunning 1 TERM \
+      || stillrunning 2 KILL
+    }
+  }
 }
 
 restoreconf() {
   test -r $CHROOT/$1-backup && cat $CHROOT/$1-backup > $CHROOT/$1
 }
 
-#########################################################################3
-#########################################################################3
-#########################################################################3
+#########################################################################
+#########################################################################
+#########################################################################
 
 test "$1" = "--update" && update
 
