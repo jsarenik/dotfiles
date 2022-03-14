@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.22.00
+VER=0.22.01
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -246,6 +246,8 @@ test "$*" = "" || { CMDS="-c '$*'"; }
 grep -qw $CHROOT /proc/mounts || { mount -o bind $CHROOT $CHROOT && BINDROOT=1; }
 
 L=$LOCKDIR/mount
+trap "thisistheend $LOCKDIR" INT QUIT
+
 grep -qw $CHROOT/proc /proc/mounts || rm -rf $L
 mkdir $L 2>/dev/null && {
 
@@ -271,9 +273,9 @@ grep -qw /dev/shm /proc/mounts 2>/dev/null && {
 }
 
 grep -qw /tmp /proc/mounts 2>/dev/null && {
-  mounty /tmp /tmp -n -o bind
+  mounty /tmp /tmp -n -o bind,rw,nodev,nosuid,noexec,relatime
 } || {
-  mounty tmpfs /tmp -n -t tmpfs
+  mounty tmpfs /tmp -n -t tmpfs -o rw,nodev,nosuid,noexec,relatime
 }
 
 mounty /var/lib/dbus /var/lib/dbus -n -o bind
