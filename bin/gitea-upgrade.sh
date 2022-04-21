@@ -1,7 +1,7 @@
 #!/bin/sh
 
 V=$(curl -s "https://github.com/go-gitea/gitea/releases" \
-  | grep -m1 -o "/go-gitea/gitea/tree/v[\.0-9]\+" 2>/dev/null)
+  | grep -m1 -o "/go-gitea/gitea/tree/v[-\.0-9rc]\+" 2>/dev/null)
 LV=$(/usr/local/bin/gitea --version | awk '{print $3}')
 V=${V##*/}
 V=${V#v}
@@ -16,7 +16,7 @@ gpg --list-keys $KEY \
   || gpg --keyserver pgp.mit.edu --recv $KEY
 URL=${1:-"https://github.com/go-gitea/gitea/releases/download/v$V/$F"}
 echo $V; echo $F; echo $URL
-wget -qc $URL $URL.sha256 $URL.asc
+/busybox/wget -c $URL $URL.sha256 $URL.asc
  
 gpg --verify $F.asc $F || exit 1
 sha256sum -c $F.sha256 || exit 1
