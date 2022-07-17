@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VER=0.22.01
+VER=0.22.02
 VERSION=$VER-$(sed 1d $0 | md5sum | cut -b-5)
 
 a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; BINDIR=$(cd "$a"; pwd)
@@ -128,7 +128,7 @@ addfile () {
     test -r $CHROOT/$1-backup || cp $CHROOT/$1 $CHROOT/$1-backup
     rm $CHROOT/$1
   }
-  test -r $CHROOT/$1 || cp $1 $CHROOT/$1
+  test -r $1 || cp $1 $CHROOT/$1
 }
 
 addline () {
