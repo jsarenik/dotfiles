@@ -1,5 +1,10 @@
-[[ $- != *i* ]] && return
+case $- in *i*) ;; *) return;; esac
+#[[ $- != *i* ]] && return
 # [ -z "$PS1" ] && return
+#
+# Following are not testing the same but they are so cool!
+#test -t 0 || return
+#tty -s || return
 
 export LESS="-ciRQ"
 alias ls='ls --color=auto'
