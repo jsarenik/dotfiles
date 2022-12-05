@@ -17,8 +17,8 @@ while true;
 do
   datetime=$(date +"%Y-%m-%d %H:%M:%S")
   datetimew=$(printf "%s" "$datetime" | wc -c)
-  move=$((cols-datetimew))
-  line="Every ${sleep}: $@ [${move}G${datetime}"
+  move=$((cols-datetimew-1))
+  line="Every ${sleep}: $@ [${move}G ${datetime}"
   printf "%s\n" "${line}" > $TMP
   echo >>$TMP
   echo "$@" | $SHELL -s >>$TMP 2>&1
