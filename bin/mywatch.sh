@@ -1,11 +1,15 @@
-#!/busybox/ash
+#!/bin/sh
 
 TMP=/tmp/mywatch-$$
-cols=$(tput cols)
+cols=$(stty size | cut -d " " -f2)
 sleep="2.0s"
 test "$1" = "-n" && { sleep=${2:-"2.0s"}; shift 2; }
 
-trap "cat $TMP 2>/dev/null; rm -f ${TMP}*; tput cnorm; exit" INT QUIT EXIT
+cnorm() {
+  printf "\033[?12l\033[?25h"
+}
+
+trap "cat $TMP 2>/dev/null; rm -f ${TMP}*; cnorm; exit" INT QUIT EXIT
 #reset; clear
 printf '\033[2J'
 
