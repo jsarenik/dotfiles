@@ -5,7 +5,8 @@
 # EOF
 
 test -r /dev/urandom || return 1
-AFILE=$HOME/.myagent.sh
+ADD=$(grep " / " /proc/mounts | md5sum | cut -b-7)
+AFILE=$HOME/.myagent-$ADD.sh
 
 test -S "$SSH_AUTH_SOCK" && {
   set | grep SSH_AUTH_SOCK; echo "export SSH_AUTH_SOCK";
