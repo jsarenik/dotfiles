@@ -1,0 +1,8 @@
+#!/bin/sh
+
+#export KD_LIBRARY_PATH=$HOME/
+a=$HOME/alpine
+export GIT_TEMPLATE_DIR=$a/usr/share/git-core/templates
+export GIT_EXEC_PATH=$a/usr/libexec/git-core
+export LD_LIBRARY_PATH=$a/lib:$a/usr/lib
+exec $HOME/alpine/usr/bin/git "$@"
